@@ -1,0 +1,132 @@
+{
+  "name": "Google Sheets to Gmail",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "92314b65-b95a-4168-8ca2-d858d03ea66d",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1PMSCAcLwIl-ydM78BzNxh93-T_fefoHznebU8oVW3pI/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Student_Data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1PMSCAcLwIl-ydM78BzNxh93-T_fefoHznebU8oVW3pI/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        0
+      ],
+      "id": "6f69f9a2-2bc7-44ea-96f6-caa87808ca4d",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "EaiwqEYWN5qUUSbs",
+          "name": "Airaj"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst students = $input.all().map(item => item.json);\n\n// Calculate student status summary\nconst total = students.length;\n\nconst completed = students.filter(\n  s => s.Status === \"Completed\"\n).length;\n\nconst inProgress = students.filter(\n  s => s.Status === \"In Progress\"\n).length;\n\nconst pending = students.filter(\n  s => s.Status === \"Pending\"\n).length;\n\n// Escape spreadsheet values for safe HTML\nconst esc = value => String(value ?? \"\")\n  .replace(/&/g, \"&amp;\")\n  .replace(/</g, \"&lt;\")\n  .replace(/>/g, \"&gt;\")\n  .replace(/\"/g, \"&quot;\")\n  .replace(/'/g, \"&#39;\");\n\n// Generate HTML table rows\nconst rows = students.map(s => {\n\n  let color = \"#333333\";\n\n  if (s.Status === \"Completed\") {\n    color = \"#15803d\";\n  } else if (s.Status === \"In Progress\") {\n    color = \"#d97706\";\n  } else if (s.Status === \"Pending\") {\n    color = \"#dc2626\";\n  }\n\n  return `\n    <tr>\n      <td>${esc(s.Student_ID)}</td>\n      <td>${esc(s.Name)}</td>\n      <td>${esc(s.Course)}</td>\n      <td style=\"color:${color};font-weight:bold;\">\n        ${esc(s.Status)}\n      </td>\n    </tr>\n  `;\n}).join(\"\");\n\n// Generate email subject\nconst subject = \"CAIE - Student Course Status Report\";\n\n// Generate HTML email body\nconst body = `\n<div style=\"font-family:Arial,sans-serif;color:#333;\">\n\n  <h2 style=\"color:#1e3a8a;\">\n    CAIE Student Course Status Report\n  </h2>\n\n  <p>Hi,</p>\n\n  <p>Please find the latest student course status\n  report from Google Sheets.</p>\n\n  <h3>Student Summary</h3>\n\n  <ul>\n    <li>Total Students: ${total}</li>\n    <li>Completed: ${completed}</li>\n    <li>In Progress: ${inProgress}</li>\n    <li>Pending: ${pending}</li>\n  </ul>\n\n  <table border=\"1\" cellpadding=\"10\" cellspacing=\"0\"\n    style=\"border-collapse:collapse;width:100%;\">\n\n    <tr style=\"background-color:#1e3a8a;color:white;\">\n      <th>Student ID</th>\n      <th>Name</th>\n      <th>Course</th>\n      <th>Status</th>\n    </tr>\n\n    ${rows}\n\n  </table>\n\n  <p>Regards,<br>\n  <b>CAIE Automation Bot</b></p>\n\n  <hr>\n\n  <p style=\"font-size:12px;color:gray;\">\n    This email was automatically generated using\n    n8n and Google Sheets.\n  </p>\n\n</div>\n`;\n\n// Return one consolidated email\nreturn [\n  {\n    json: {\n      subject: subject,\n      body: body,\n      total_students: total,\n      completed: completed,\n      in_progress: inProgress,\n      pending: pending\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "1eadf281-2d27-44b6-922e-93d46811dd67",
+      "name": "Generate Email Report"
+    },
+    {
+      "parameters": {
+        "sendTo": "raj230987@gmail.com",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        672,
+        0
+      ],
+      "id": "e52f7821-ddfb-499f-bdae-ee00a40a2748",
+      "name": "Send a message",
+      "webhookId": "9a34e005-f077-401f-88f7-8c3785eff8e4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Sae5sTwETcIXIwIi",
+          "name": "airaj"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Generate Email Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Email Report": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2c5e26f6-ea20-4531-bab4-3ba2ffaa3610",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "376ec4f90cf56c443c61f8acd0e1f12472b78b84b243c4b7152a8f0206f93335"
+  },
+  "nodeGroups": [],
+  "id": "EhywbpzxaVzCsvnB",
+  "tags": []
+}

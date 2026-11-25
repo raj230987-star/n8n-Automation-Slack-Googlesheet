@@ -1,0 +1,33 @@
+
+# Environment variables
+.env
+.env.*
+
+# Credentials and secrets
+credentials.json
+client_secret*.json
+secrets.json
+token.json
+*.pem
+*.key
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Node.js
+node_modules/
+
+# VS Code
+.vscode/
+
+# System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.log
+*.tmp
